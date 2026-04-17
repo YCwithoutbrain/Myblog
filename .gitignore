@@ -1,0 +1,29 @@
+node_modules
+public/uploads/*
+!public/uploads/.gitkeep
+backups/*
+!backups/.gitkeep
+
+# IDEs and Editors
+.vs/
+.vscode/
+
+# Environment variables (Security)
+.env
+.env.*
+!.env.example
+
+# Logs
+logs/*
+!logs/.gitkeep
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Temporary files
+temp/*
+!temp/.gitkeep
+
+# OS generated files
+.DS_Store
+Thumbs.db
