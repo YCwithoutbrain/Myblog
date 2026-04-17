@@ -1,0 +1,231 @@
+﻿const express = require('express');
+const mongoose = require('mongoose');
+const session = require('express-session');
+const MongoStore = require('connect-mongo').default || require('connect-mongo');
+const path = require('path');
+const os = require('os');
+const fs = require('fs');
+require('dotenv').config();
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+const HOST = process.env.HOST || '0.0.0.0';
+
+// Windows特定配置
+const isWindows = process.platform === 'win32';
+const tempDir = path.join(__dirname, 'temp');
+
+// 创建临时目录（Windows需要）
+if (!fs.existsSync(tempDir)) {
+    fs.mkdirSync(tempDir, { recursive: true });
+}
+
+// 数据库连接（Windows优化）
+const mongoOptions = {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    serverSelectionTimeoutMS: 5000,
+    socketTimeoutMS: 45000,
+    family: 4 // 强制使用IPv4，避免Windows IPv6问题
+};
+
+mongoose.connect(process.env.MONGODB_URI, mongoOptions)
+    .then(() => {
+        console.log('✅ MongoDB连接成功');
+
+        // Windows性能优化
+        if (isWindows) {
+            mongoose.connection.on('error', (err) => {
+                console.error('MongoDB连接错误:', err);
+            });
+        }
+    })
+    .catch(err => {
+        console.error('❌ MongoDB连接失败:', err.message);
+        console.log('💡 请确保MongoDB服务已启动: net start MongoDB');
+        process.exit(1);
+    });
+
+// 中间件配置
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.static(path.join(__dirname, 'public'), {
+    maxAge: isWindows ? '1d' : '7d' // Windows缓存时间短一些
+}));
+
+// 会话配置（Windows优化）
+const sessionConfig = {
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    store: MongoStore.create({
+        mongoUrl: process.env.MONGODB_URI,
+        ttl: 24 * 60 * 60, // 24小时
+        autoRemove: 'native',
+        touchAfter: 3600 // 1小时
+    }),
+    cookie: {
+        secure: false, // Windows开发环境通常不用HTTPS
+        httpOnly: true,
+        maxAge: 24 * 60 * 60 * 1000,
+        sameSite: 'lax'
+    }
+};
+
+// Windows开发环境调整
+if (isWindows && process.env.NODE_ENV !== 'production') {
+    sessionConfig.cookie.secure = false;
+}
+
+app.use(session(sessionConfig));
+
+// 视图引擎
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'src/views'));
+
+// 全局变量（Windows信息）
+app.locals.isWindows = isWindows;
+app.locals.hostname = os.hostname();
+app.locals.platform = os.platform();
+app.locals.serverUptime = Date.now();
+
+// 路由
+app.use('/', require('./src/routes/public/index'));
+app.use('/admin', require('./src/routes/admin/auth'));
+app.use('/admin/posts', require('./src/routes/admin/posts'));
+app.use('/api', require('./src/routes/api'));
+
+// Windows系统信息端点
+app.get('/api/system-info', (req, res) => {
+    res.json({
+        platform: process.platform,
+        arch: process.arch,
+        nodeVersion: process.version,
+        memoryUsage: process.memoryUsage(),
+        uptime: process.uptime(),
+        serverTime: new Date().toISOString(),
+        hostname: os.hostname(),
+        cpus: os.cpus().length,
+        totalMemory: Math.round(os.totalmem() / 1024 / 1024) + ' MB',
+        freeMemory: Math.round(os.freemem() / 1024 / 1024) + ' MB'
+    });
+});
+
+// TCP服务器（Windows优化）
+const net = require('net');
+const tcpServer = net.createServer((socket) => {
+    // Windows防火墙可能需要放行此端口
+    const clientAddress = socket.remoteAddress;
+    console.log(`🔌 TCP客户端连接: ${clientAddress}`);
+
+    // 设置超时（Windows网络可能不稳定）
+    socket.setTimeout(30000);
+
+    socket.on('timeout', () => {
+        console.log(`⏰ TCP连接超时: ${clientAddress}`);
+        socket.write('连接超时\n');
+        socket.end();
+    });
+
+    const handleTCPCommand = (command, socket) => {
+        if (command.toUpperCase() === 'HELP') {
+            socket.write('可用命令: HELP, PING, INFO\n');
+        } else if (command.toUpperCase() === 'PING') {
+            socket.write('PONG\n');
+        } else if (command.toUpperCase() === 'INFO') {
+            socket.write(`运行时间: ${process.uptime()}s\n`);
+        } else if (command !== '') {
+            socket.write('未知命令。输入 HELP 获取帮助。\n');
+        }
+    };
+
+    socket.on('data', (data) => {
+        try {
+            const command = data.toString().trim();
+            handleTCPCommand(command, socket);
+        } catch (err) {
+            console.error('TCP命令处理错误:', err);
+            socket.write('命令处理错误\n');
+        }
+    });
+
+    socket.on('end', () => {
+        console.log(`🔌 TCP客户端断开: ${clientAddress}`);
+    });
+
+    socket.on('error', (err) => {
+        console.error(`TCP连接错误 (${clientAddress}):`, err.message);
+    });
+
+    // 发送欢迎信息
+    socket.write(`欢迎连接到个人博客服务器 (Windows)\n`);
+    socket.write(`服务器时间: ${new Date().toLocaleString()}\n`);
+    socket.write(`输入 HELP 查看可用命令\n\n`);
+});
+
+tcpServer.on('error', (err) => {
+    console.error('TCP服务器错误:', err);
+    if (err.code === 'EADDRINUSE') {
+        console.log('💡 端口3001已被占用，请检查是否有其他程序在使用');
+    }
+});
+
+tcpServer.listen(process.env.TCP_PORT || 3001, HOST, () => {
+    console.log(`🔌 TCP服务器监听: ${HOST}:${process.env.TCP_PORT || 3001}`);
+});
+
+// 优雅关闭（Windows信号处理）
+process.on('SIGINT', () => {
+    console.log('\n🛑 收到关闭信号，正在优雅关闭...');
+
+    // 关闭TCP服务器
+    tcpServer.close(() => {
+        console.log('🔌 TCP服务器已关闭');
+    });
+
+    // 关闭数据库连接
+    mongoose.connection.close(false, () => {
+        console.log('📦 数据库连接已关闭');
+        process.exit(0);
+    });
+
+    // 超时强制退出
+    setTimeout(() => {
+        console.log('⏰ 关闭超时，强制退出');
+        process.exit(1);
+    }, 5000);
+});
+
+// 启动HTTP服务器
+const httpServer = app.listen(PORT, HOST, () => {
+    console.log('========================================');
+    console.log('🚀 个人博客系统启动成功！');
+    console.log('========================================');
+    console.log(`🌐 HTTP服务器: http://${HOST}:${PORT}`);
+    console.log(`🔌 TCP服务器: ${HOST}:${process.env.TCP_PORT || 3001}`);
+    console.log(`📁 工作目录: ${__dirname}`);
+    console.log(`💻 操作系统: ${process.platform} ${process.arch}`);
+    console.log(`⚙️  运行模式: ${process.env.NODE_ENV || 'development'}`);
+    console.log('========================================');
+    console.log('\n📋 快速访问:');
+    console.log(`   前台页面: http://localhost:${PORT}`);
+    console.log(`   管理面板: http://localhost:${PORT}/admin`);
+    console.log(`   TCP连接: telnet localhost ${process.env.TCP_PORT || 3001}`);
+    console.log(`   系统信息: http://localhost:${PORT}/api/system-info`);
+    console.log('\n🔧 管理命令:');
+    console.log('   Ctrl+C 停止服务器');
+    console.log('========================================\n');
+});
+
+// 处理Windows控制台关闭
+if (isWindows) {
+    const readline = require('readline');
+    if (process.stdin.isTTY) {
+        process.stdin.on('keypress', (str, key) => {
+            if (key.ctrl && key.name === 'c') {
+                console.log('\n🛑 正在关闭服务器...');
+                process.emit('SIGINT');
+            }
+        });
+    }
+}

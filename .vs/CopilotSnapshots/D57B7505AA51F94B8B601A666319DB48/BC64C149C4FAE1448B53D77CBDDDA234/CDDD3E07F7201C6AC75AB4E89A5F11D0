@@ -1,0 +1,171 @@
+﻿@echo off
+chcp 65001 >nul
+title 个人博客系统 - Windows一键部署
+color 0F
+
+echo ========================================
+echo   个人博客系统 Windows一键部署脚本
+echo ========================================
+echo.
+echo 此脚本将完成以下操作:
+echo 1. 检查系统环境
+echo 2. 安装必要软件
+echo 3. 配置数据库
+echo 4. 部署博客系统
+echo 5. 配置内网穿透
+echo.
+echo 按 Ctrl+C 取消...
+
+REM 阶段1: 环境检查
+echo.
+echo ========================================
+echo   阶段1: 环境检查
+echo ========================================
+echo.
+
+REM 检查Windows版本
+ver | find "10." > nul
+if errorlevel 1 (
+    echo [警告] 推荐使用Windows 10或更高版本
+)
+
+REM 检查Node.js
+where node >nul 2>nul
+if errorlevel 1 (
+    echo [错误] Node.js未安装
+    echo 正在打开Node.js下载页面...
+    start https://nodejs.org/dist/v18.17.0/node-v18.17.0-x64.msi
+    echo 请安装Node.js后重新运行此脚本
+    pause
+    exit /b 1
+)
+echo [成功] Node.js已安装:
+node --version
+
+REM 检查npm
+where npm >nul 2>nul
+if errorlevel 1 (
+    echo [错误] npm未找到
+    pause
+    exit /b 1
+)
+echo [成功] npm已安装:
+npm --version
+
+REM 阶段2: 安装MongoDB
+echo.
+echo ========================================
+echo   阶段2: 安装MongoDB
+echo ========================================
+echo.
+
+sc query MongoDB >nul 2>nul
+if errorlevel 1 (
+    echo [信息] MongoDB未安装，正在安装...
+    call "%~dp0..\windows-services\install-mongodb.bat"
+) else (
+    echo [成功] MongoDB服务已运行
+)
+
+REM 阶段3: 安装项目依赖
+echo.
+echo ========================================
+echo   阶段3: 安装项目依赖
+echo ========================================
+echo.
+
+cd /d "%~dp0.."
+echo [信息] 安装项目依赖...
+npm install
+
+if errorlevel 1 (
+    echo [错误] 依赖安装失败
+    pause
+    exit /b 1
+)
+echo [成功] 项目依赖安装完成
+
+REM 阶段4: 初始化数据库
+echo.
+echo ========================================
+echo   阶段4: 初始化数据库
+echo ========================================
+echo.
+
+echo [信息] 初始化数据库...
+node scripts/init-database.js
+
+if errorlevel 1 (
+    echo [错误] 数据库初始化失败
+    pause
+    exit /b 1
+)
+
+REM 阶段5: 安装Windows服务
+echo.
+echo ========================================
+echo   阶段5: 安装Windows服务
+echo ========================================
+echo.
+
+echo [信息] 安装博客系统服务...
+call "%~dp0..\windows-services\install-blog-service.bat"
+
+REM 阶段6: 配置OpenFRP
+echo.
+echo ========================================
+echo   阶段6: 配置内网穿透
+echo ========================================
+echo.
+
+set /p configure_frp=是否配置OpenFRP内网穿透? (y/n):
+if /i "%configure_frp%"=="y" (
+    call "%~dp0deploy-frp.bat"
+)
+
+echo.
+echo ========================================
+echo   🎉 部署完成！
+echo ========================================
+echo.
+echo 博客系统已成功部署到您的Windows主机！
+echo.
+echo 📍 本地访问:
+echo    前台: http://localhost:3000
+echo    后台: http://localhost:3000/admin
+echo    TCP: telnet localhost 3001 echo    系统信息: http://localhost:3000/api/system-info
+echo.
+echo 🌐 外网访问 (如果配置了OpenFRP):
+if defined FRP_SERVER (
+    echo    前台: http://%FRP_SERVER%:%FRP_WEB_PORT%
+    echo    后台: http://%FRP_SERVER%:%FRP_WEB_PORT%/admin
+    echo    TCP: telnet %FRP_SERVER% %FRP_TCP_PORT%
+)
+echo.
+echo 🔧 日常管理:
+echo    启动服务: net start PersonalBlog
+echo    停止服务: net stop PersonalBlog
+echo    查看日志: 查看 logs\ 目录
+echo    备份数据: 运行 scripts\backup-database.bat
+echo.
+echo 📞 故障排除:
+echo    1. 端口占用: netstat -ano | findstr :3000
+echo    2. 服务状态: sc query PersonalBlog
+echo    3. MongoDB: net start MongoDB
+echo    4. 防火墙: 确保3000和3001端口开放
+echo.
+echo ========================================
+echo   按任意键完成部署...
+pause >nul
+
+REM 清理临时文件
+if exist temp\*.* del /q temp\*.*
+
+echo.
+echo 🎊 所有部署步骤已完成！
+echo 💡 建议重启计算机以确保所有服务正常启动。
+echo.
+echo 按任意键退出...
+pause >nul
+
+exit /b 0

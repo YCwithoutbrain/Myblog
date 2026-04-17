@@ -1,0 +1,10 @@
+﻿const express = require('express');
+const router = express.Router();
+
+router.use(require('./health'));
+
+router.get('/', (req, res) => {
+    res.render('public/index', { title: '个人博客主页' });
+});
+
+module.exports = router;

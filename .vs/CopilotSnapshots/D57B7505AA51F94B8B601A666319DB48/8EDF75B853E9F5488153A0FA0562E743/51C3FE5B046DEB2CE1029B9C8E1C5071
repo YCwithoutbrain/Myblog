@@ -1,0 +1,19 @@
+﻿const express = require('express');
+const router = express.Router();
+const postController = require('../../controllers/postController');
+
+router.use(require('./health'));
+
+router.get('/', postController.getHomepage);
+router.get('/post/:slug', postController.getPostBySlug);
+
+// 临时页面占位
+router.get('/projects', (req, res) => res.render('public/projects'));
+router.get('/lab', (req, res) => res.render('public/lab'));
+router.get('/about', (req, res) => res.render('public/about'));
+router.get('/rss.xml', (req, res) => {
+    res.type('application/xml');
+    res.send('<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>My Blog</title><description>RSS Feed</description></channel></rss>');
+});
+
+module.exports = router;

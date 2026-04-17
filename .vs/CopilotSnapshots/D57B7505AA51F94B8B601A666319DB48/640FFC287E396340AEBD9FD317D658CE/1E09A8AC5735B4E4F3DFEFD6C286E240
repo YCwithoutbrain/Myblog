@@ -1,0 +1,52 @@
+﻿const jwt = require('jsonwebtoken');
+
+// HTTP认证中间件
+const requireAuth = (req, res, next) => {
+    // 检查会话
+    if (req.session && req.session.userId) {
+        return next();
+    }
+
+    // 检查JWT Token（用于API）
+    const token = req.headers.authorization?.split(' ')[1];
+    if (token) {
+        try {
+            const decoded = jwt.verify(token, process.env.JWT_SECRET);
+            req.userId = decoded.userId;
+            return next();
+        } catch (err) {
+            // Token无效
+        }
+    }
+
+    // 未认证
+    if (req.xhr || req.headers.accept?.includes('application/json')) {
+        return res.status(401).json({ error: 'Authentication required' });
+    }
+    res.redirect('/admin/login');
+};
+
+// TCP认证中间件
+const requireTCPAuth = (socket, next) => {
+    // 基于IP白名单或预共享密钥
+    const clientIP = socket.remoteAddress;
+    const allowedIPs = process.env.TCP_ALLOWED_IPS?.split(',') || [];
+
+    if (allowedIPs.includes(clientIP) || allowedIPs.includes('0.0.0.0')) {
+        return next();
+    }
+
+    // 发送认证请求
+    socket.write('AUTH_REQUIRED\n');
+    socket.once('data', (data) => {
+        const token = data.toString().trim();
+        if (token === process.env.TCP_SHARED_SECRET) {
+            next();
+        } else {
+            socket.write('AUTH_FAILED\n');
+            socket.end();
+        }
+    });
+};
+
+module.exports = { requireAuth, requireTCPAuth };

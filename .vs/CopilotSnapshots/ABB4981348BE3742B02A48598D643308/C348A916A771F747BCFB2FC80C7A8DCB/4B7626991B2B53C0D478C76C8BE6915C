@@ -1,0 +1,100 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title><%= post.title %> - My Blog</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown-light.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css">
+    <style>
+        .markdown-body {
+            box-sizing: border-box;
+            min-width: 200px;
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 45px;
+            background-color: transparent;
+        }
+        @media (max-width: 767px) {
+            .markdown-body {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans text-gray-800">
+    <nav class="bg-white shadow p-4">
+        <div class="container mx-auto flex justify-between items-center">
+            <a href="/" class="text-xl font-bold">My Blog</a>
+            <div class="space-x-4">
+                <a href="/" class="text-gray-600 hover:text-blue-600">首页</a>
+                <a href="/admin" class="text-gray-600 hover:text-blue-600">后台</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mx-auto px-6 py-12 max-w-4xl">
+        <article class="bg-white rounded-lg shadow-md overflow-hidden">
+            <% if (post.featuredImage) { %>
+                <img src="/<%= post.featuredImage.replace(/\\/g, '/').replace(/^public\//, '') %>" alt="<%= post.title %>" class="w-full h-auto max-h-96 object-contain bg-gray-50">
+            <% } %>
+            <div class="p-8">
+                <div class="flex items-center text-sm text-gray-500 mb-4">
+                    <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full"><%= post.category %></span>
+                    <span class="mx-2">•</span>
+                    <span><%= post.formattedDate %></span>
+                    <span class="mx-2">•</span>
+                    <span><%= post.views %> 次阅读</span>
+                </div>
+                <h1 class="text-3xl font-bold mb-6"><%= post.title %></h1>
+                <% if (post.tags && post.tags.length > 0) { %>
+                    <div class="flex flex-wrap gap-2 mb-8">
+                        <% post.tags.forEach(tag => { %>
+                            <span class="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-sm"><%= tag %></span>
+                        <% }) %>
+                    </div>
+                <% } %>
+                <div class="markdown-body" id="markdown-container">
+                    <div style="white-space: pre-wrap;"><%= post.content %></div>
+                </div>
+
+                <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const rawContent = <%- JSON.stringify(post.content || '').replace(/</g, '\\u003c') %>;
+                        const container = document.getElementById('markdown-container');
+
+                        if (rawContent && typeof marked !== 'undefined') {
+                            // Parse markdown
+                            container.innerHTML = marked.parse(rawContent);
+
+                            // Highlight code blocks
+                            if (typeof hljs !== 'undefined') {
+                                container.querySelectorAll('pre code').forEach((block) => {
+                                    hljs.highlightElement(block);
+                                });
+                            }
+                        }
+                    });
+                </script>
+            </div>
+        </article>
+
+        <% if (relatedPosts && relatedPosts.length > 0) { %>
+            <div class="mt-12">
+                <h3 class="text-xl font-bold mb-6">相关推荐</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <% relatedPosts.forEach(related => { %>
+                        <a href="/post/<%= related.slug %>" class="bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition">
+                            <h4 class="font-bold text-gray-800 mb-2 truncate"><%= related.title %></h4>
+                            <div class="text-sm text-gray-500"><%= related.formattedDate %></div>
+                        </a>
+                    <% }) %>
+                </div>
+            </div>
+        <% } %>
+    </main>
+</body>
+</html>

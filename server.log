@@ -1,0 +1,23 @@
+◇ injected env (21) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+🔌 TCP服务器监听: 0.0.0.0:3001
+========================================
+🚀 个人博客系统启动成功！
+========================================
+🌐 HTTP服务器: http://0.0.0.0:3000
+🔌 TCP服务器: 0.0.0.0:3001
+📁 工作目录: D:\Myblog
+💻 操作系统: win32 x64
+⚙️  运行模式: production
+========================================
+
+📋 快速访问:
+   前台页面: http://localhost:3000
+   管理面板: http://localhost:3000/admin
+   TCP连接: telnet localhost 3001
+   系统信息: http://localhost:3000/api/system-info
+
+🔧 管理命令:
+   Ctrl+C 停止服务器
+========================================
+
+✅ MongoDB连接成功

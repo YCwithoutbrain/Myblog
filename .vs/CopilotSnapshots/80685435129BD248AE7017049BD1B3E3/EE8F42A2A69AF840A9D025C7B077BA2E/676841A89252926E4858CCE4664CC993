@@ -1,0 +1,118 @@
+﻿const Post = require('../models/Post');
+
+exports.getHomepage = async (req, res) => {
+    try {
+        const searchQuery = req.query.q || '';
+        const page = parseInt(req.query.page) || 1;
+        const limit = 10;
+        const skip = (page - 1) * limit;
+
+        let pinnedPosts = [];
+        let posts = [];
+        let total = 0;
+
+        if (searchQuery) {
+            // 搜索模式
+            const searchRegex = new RegExp(searchQuery, 'i');
+            const searchCondition = {
+                isPublished: true,
+                $or: [
+                    { title: searchRegex },
+                    { content: searchRegex },
+                    { excerpt: searchRegex }
+                ]
+            };
+
+            [posts, total] = await Promise.all([
+                Post.find(searchCondition)
+                    .sort({ createdAt: -1 })
+                    .skip(skip)
+                    .limit(limit)
+                    .select('title excerpt slug featuredImage createdAt tags metadata.readTime category'),
+                Post.countDocuments(searchCondition)
+            ]);
+        } else {
+            // 常规模式
+            pinnedPosts = await Post.find({
+                isPinned: true,
+                isPublished: true
+            })
+                .sort({ createdAt: -1 })
+                .limit(2)
+                .select('title excerpt slug featuredImage createdAt tags metadata.readTime');
+
+            [posts, total] = await Promise.all([
+                Post.find({
+                    isPublished: true,
+                    isPinned: false
+                })
+                    .sort({ createdAt: -1 })
+                    .skip(skip)
+                    .limit(limit)
+                    .select('title excerpt slug featuredImage createdAt tags metadata.readTime category'),
+
+                Post.countDocuments({
+                    isPublished: true,
+                    isPinned: false
+                })
+            ]);
+        }
+
+        const totalPages = Math.ceil(total / limit);
+
+        res.render('public/index', {
+            title: searchQuery ? `搜索: ${searchQuery}` : '个人博客 | 工程记录与思考',
+            pinnedPosts,
+            posts,
+            searchQuery,
+            currentPage: page,
+            totalPages,
+            hasNextPage: page < totalPages,
+            hasPrevPage: page > 1
+        });
+    } catch (error) {
+        console.error('Error fetching posts:', error);
+        res.status(500).render('error', {
+            message: '服务器错误，请稍后重试'
+        });
+    }
+};
+
+exports.getPostBySlug = async (req, res) => {
+    try {
+        const post = await Post.findOne({
+            slug: req.params.slug,
+            isPublished: true
+        }).populate('author', 'username displayName');
+
+        if (!post) {
+            return res.status(404).render('error', {
+                message: '文章未找到'
+            });
+        }
+
+        // 增加阅读量
+        post.views += 1;
+        await post.save();
+
+        // 获取相关文章
+        const relatedPosts = await Post.find({
+            _id: { $ne: post._id },
+            tags: { $in: post.tags },
+            isPublished: true
+        })
+            .limit(3)
+            .select('title slug formattedDate');
+
+        res.render('public/post', {
+            title: post.title,
+            post,
+            relatedPosts
+        });
+    } catch (error) {
+        console.error('Error fetching post:', error);
+        res.status(500).render('error', {
+            message: '服务器错误'
+        });
+    }
+};

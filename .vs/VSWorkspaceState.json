@@ -1,0 +1,16 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\src",
+    "\\src\\config",
+    "\\src\\routes",
+    "\\src\\routes\\public",
+    "\\src\\views",
+    "\\src\\views\\admin",
+    "\\src\\views\\layouts",
+    "\\src\\views\\partials",
+    "\\src\\views\\public"
+  ],
+  "SelectedNode": "\\server.log",
+  "PreviewInSolutionExplorer": false
+}

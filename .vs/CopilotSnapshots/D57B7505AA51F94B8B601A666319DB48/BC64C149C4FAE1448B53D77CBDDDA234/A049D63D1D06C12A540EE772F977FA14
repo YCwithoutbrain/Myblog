@@ -1,0 +1,95 @@
+﻿@echo off
+chcp 65001 >nul
+title 安装MongoDB Windows服务
+color 0E
+
+echo ========================================
+echo   MongoDB Windows服务安装脚本
+echo ========================================
+echo.
+
+REM 检查是否以管理员身份运行
+net session >nul 2>&1
+if %errorLevel% neq 0 (
+    echo [错误] 请以管理员身份运行此脚本
+    exit /b 1
+)
+
+REM 设置MongoDB路径
+set MONGO_PATH=C:\Program Files\MongoDB
+set DATA_PATH=D:\MongoDB\data
+set LOG_PATH=D:\MongoDB\log
+
+REM 创建数据目录
+if not exist "%DATA_PATH%" (
+    mkdir "%DATA_PATH%"
+    echo [信息] 创建数据目录: %DATA_PATH%
+)
+
+REM 创建日志目录
+if not exist "%LOG_PATH%" (
+    mkdir "%LOG_PATH%"
+    echo [信息] 创建日志目录: %LOG_PATH%
+)
+
+REM 下载MongoDB（如果不存在）
+if not exist "%MONGO_PATH%\bin\mongod.exe" (
+    echo [信息] MongoDB未安装，正在下载...
+
+    REM 方法1：使用官方MSI安装程序
+    echo 请手动下载并安装MongoDB Community Edition:
+    echo https://www.mongodb.com/try/download/community
+    echo.
+    echo 安装时请选择:
+    echo 1. 完整安装
+    echo 2. 安装为服务
+    echo 3. 数据目录: %DATA_PATH%
+    echo 4. 日志目录: %LOG_PATH%
+    echo.
+    exit /b 0
+)
+
+REM 创建配置文件
+echo # MongoDB配置文件 > "%MONGO_PATH%\mongod.cfg"
+echo systemLog: >> "%MONGO_PATH%\mongod.cfg"
+echo   destination: file >> "%MONGO_PATH%\mongod.cfg"
+echo   path: "%LOG_PATH%\mongod.log" >> "%MONGO_PATH%\mongod.cfg"
+echo   logAppend: true >> "%MONGO_PATH%\mongod.cfg"
+echo. >> "%MONGO_PATH%\mongod.cfg"
+echo storage: >> "%MONGO_PATH%\mongod.cfg"
+echo   dbPath: "%DATA_PATH%" >> "%MONGO_PATH%\mongod.cfg"
+echo   journal: >> "%MONGO_PATH%\mongod.cfg"
+echo     enabled: true >> "%MONGO_PATH%\mongod.cfg"
+echo. >> "%MONGO_PATH%\mongod.cfg"
+echo net: >> "%MONGO_PATH%\mongod.cfg"
+echo   bindIp: 127.0.0.1 >> "%MONGO_PATH%\mongod.cfg"
+echo   port: 27017 >> "%MONGO_PATH%\mongod.cfg"
+
+echo [信息] 配置文件已创建: %MONGO_PATH%\mongod.cfg
+
+REM 安装Windows服务
+echo [信息] 安装MongoDB Windows服务...
+"%MONGO_PATH%\bin\mongod.exe" --config "%MONGO_PATH%\mongod.cfg" --install
+
+REM 启动服务
+echo [信息] 启动MongoDB服务...
+net start MongoDB
+
+echo.
+echo ========================================
+echo   MongoDB服务安装完成！
+echo ========================================
+echo.
+echo 服务状态: MongoDB (已启动)
+echo 数据目录: %DATA_PATH%
+echo 日志文件: %LOG_PATH%\mongod.log
+echo 连接地址: mongodb://localhost:27017
+echo.
+echo 管理命令:
+echo   net start MongoDB    启动服务
+echo   net stop MongoDB     停止服务
+echo   sc delete MongoDB    删除服务
+echo.
+pause
+
+exit /b 0

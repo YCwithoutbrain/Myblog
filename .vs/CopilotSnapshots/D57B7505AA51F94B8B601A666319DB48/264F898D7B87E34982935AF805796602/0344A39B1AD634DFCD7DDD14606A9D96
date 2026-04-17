@@ -1,0 +1,32 @@
+﻿# Windows特定配置
+NODE_ENV=production
+PORT=3000
+TCP_PORT=3001
+HOST=0.0.0.0
+
+# MongoDB配置（Windows服务）
+MONGODB_URI=mongodb://localhost:27017/personal_blog
+MONGO_DATA_PATH=D:\MongoDB\data
+MONGO_LOG_PATH=D:\MongoDB\log
+
+# 安全配置
+JWT_SECRET=your_jwt_secret_change_this
+SESSION_SECRET=your_session_secret_change_this
+TCP_SHARED_SECRET=your_tcp_shared_secret
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=admin
+
+# 文件上传
+UPLOAD_PATH=public/uploads
+MAX_FILE_SIZE=5242880
+
+# OpenFRP配置
+FRP_SERVER=frp.example.com
+FRP_PORT=7000
+FRP_TOKEN=your_frp_token
+FRP_WEB_PORT=8080
+FRP_TCP_PORT=3001
+
+# Windows路径配置
+NODE_PATH=C:\Program Files\nodejs
+PM2_PATH=%APPDATA%\npm\node_modules\pm2

@@ -1,0 +1,10 @@
+﻿const express = require('express');
+const router = express.Router();
+const postController = require('../../controllers/postController');
+
+router.use(require('./health'));
+
+router.get('/', postController.getHomepage);
+router.get('/post/:slug', postController.getPostBySlug);
+
+module.exports = router;
