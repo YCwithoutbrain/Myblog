@@ -5,10 +5,14 @@ const validator = require('validator');
 const sanitizeOptions = {
     allowedTags: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'p', 'a', 'ul', 'ol',
         'li', 'b', 'i', 'strong', 'em', 'strike', 'code', 'hr', 'br', 'div',
-        'table', 'thead', 'caption', 'tbody', 'tr', 'th', 'td', 'pre', 'span'],
+        'table', 'thead', 'caption', 'tbody', 'tr', 'th', 'td', 'pre', 'span', 
+        'img', 'svg', 'path', 'g', 'circle', 'rect', 'line', 'polyline', 'polygon'],
     allowedAttributes: {
-        a: ['href', 'name', 'target'],
+        a: ['href', 'name', 'target', 'onmouseover', 'onmouseout'],
         img: ['src', 'alt', 'title', 'width', 'height'],
+        div: ['class', 'id', 'style', 'align'],
+        svg: ['height', 'viewBox', 'width', 'style', 'fill', 'xmlns'],
+        path: ['d', 'fill', 'stroke'],
         '*': ['class', 'id', 'style']
     },
     allowedSchemes: ['http', 'https', 'mailto', 'ftp']
