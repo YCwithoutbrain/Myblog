@@ -12,6 +12,7 @@ const fs = require('fs');
 require('dotenv').config();
 
 const app = express();
+app.set('trust proxy', 1); // 信任反向代理（对于内网穿透/Nginx很重要）
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || '0.0.0.0';
 

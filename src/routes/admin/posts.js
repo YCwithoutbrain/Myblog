@@ -37,7 +37,7 @@ const upload = multer({
 });
 
 // Markdown 编辑器图片上传
-router.post('/upload', requireAuth, upload.single('image'), async (req, res) => {
+router.post('/upload',  upload.single('image'), async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ error: '没有提供文件' });
@@ -51,7 +51,7 @@ router.post('/upload', requireAuth, upload.single('image'), async (req, res) => 
 });
 
 // 文章列表
-router.get('/', requireAuth, async (req, res) => {
+router.get('/',  async (req, res) => {
     const searchQuery = req.query.q || '';
     const page = parseInt(req.query.page) || 1;
     const limit = 20;
@@ -85,7 +85,7 @@ router.get('/', requireAuth, async (req, res) => {
 });
 
 // 创建文章页面
-router.get('/new', requireAuth, (req, res) => {
+router.get('/new',  (req, res) => {
     res.render('admin/editor', {
         title: '新建文章',
         post: null,
@@ -94,7 +94,7 @@ router.get('/new', requireAuth, (req, res) => {
 });
 
 // 编辑文章页面
-router.get('/edit/:id', requireAuth, async (req, res) => {
+router.get('/edit/:id',  async (req, res) => {
     try {
         const post = await Post.findById(req.params.id);
         if (!post) {
@@ -111,7 +111,7 @@ router.get('/edit/:id', requireAuth, async (req, res) => {
 });
 
 // 创建文章
-router.post('/', requireAuth, upload.single('featuredImage'), async (req, res) => {
+router.post('/',  upload.single('featuredImage'), async (req, res) => {
     try {
         const postData = {
             title: req.body.title,
@@ -142,7 +142,7 @@ router.post('/', requireAuth, upload.single('featuredImage'), async (req, res) =
 });
 
 // 更新文章
-router.put('/:id', requireAuth, upload.single('featuredImage'), async (req, res) => {
+router.put('/:id',  upload.single('featuredImage'), async (req, res) => {
     try {
         const post = await Post.findById(req.params.id);
         if (!post) {
@@ -181,7 +181,7 @@ router.put('/:id', requireAuth, upload.single('featuredImage'), async (req, res)
 });
 
 // 删除文章
-router.delete('/:id', requireAuth, async (req, res) => {
+router.delete('/:id',  async (req, res) => {
     try {
         const post = await Post.findById(req.params.id);
         if (!post) {
