@@ -38,11 +38,11 @@ const postSchema = new mongoose.Schema({
         default: true
     },
     featuredImage: String,
-    videoUrl: {
     featuredVideo: {
         type: String,
         trim: true
     },
+    videoUrl: {
         type: String,
         trim: true
     },
@@ -89,7 +89,8 @@ postSchema.pre('save', function (next) {
 // 更新编辑时间
 postSchema.pre('save', function (next) {
     if (this.isModified('content')) {
-        if (!this.metadata) this.metadata = {}; this.metadata.lastEdited = new Date();
+        if (!this.metadata) this.metadata = {};
+        this.metadata.lastEdited = new Date();
 
         // 计算字数
         if (this.content) {
