@@ -72,6 +72,35 @@
                 <% } %>
                 <div class="markdown-body" id="markdown-container">
                     <div style="white-space: pre-wrap;"><%= post.content %></div>
+
+        <!-- 视频嵌入 -->
+        <% if (post.videoUrl) { %>
+        <div class="video-container max-w-4xl mx-auto mt-8 mb-8 rounded-lg overflow-hidden shadow-lg">
+            <% if (post.videoUrl.includes('bilibili') || post.videoUrl.includes('BV')) { %>
+                <% const bvid = post.videoUrl.split('/').pop().split('?')[0]; %>
+                <div style="position: relative; padding: 56.25% 0 0 0;">
+                    <iframe src="https://player.bilibili.com/player.html?bvid=<%= bvid %>&page=1&high_quality=1"
+                        style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"
+                        scrolling="no" frameborder="no" allowfullscreen></iframe>
+                </div>
+            <% } else if (post.videoUrl.includes('youtube') || post.videoUrl.includes('youtu.be')) { %>
+                <% const ytId = post.videoUrl.split('v=')[1]?.split('&')[0] || post.videoUrl.split('youtu.be/')[1]?.split('?')[0]; %>
+                <div style="position: relative; padding: 56.25% 0 0 0;">
+                    <iframe src="https://www.youtube.com/embed/<%= ytId %>"
+                        style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"
+                        frameborder="0" allowfullscreen></iframe>
+                </div>
+            <% } else { %>
+                <!-- 直链视频 -->
+                <video controls style="width: 100%; max-height: 70vh;" preload="metadata"
+                    poster="/<%= post.featuredImage %>">
+                    <source src="<%= post.videoUrl %>" type="video/mp4">
+                    你的浏览器不支持视频播放
+                </video>
+            <% } %>
+        </div>
+        <% } %>
+
                 </div>
 
                 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>

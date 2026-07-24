@@ -38,6 +38,14 @@ const postSchema = new mongoose.Schema({
         default: true
     },
     featuredImage: String,
+    videoUrl: {
+    featuredVideo: {
+        type: String,
+        trim: true
+    },
+        type: String,
+        trim: true
+    },
     author: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
