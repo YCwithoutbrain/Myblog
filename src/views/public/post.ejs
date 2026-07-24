@@ -35,6 +35,12 @@
             max-width: none !important;
             height: auto;
         }
+        /* 正文 iframe 响应式（B站等嵌入视频） */
+        .markdown-body iframe {
+            max-width: 100%;
+            height: auto;
+            aspect-ratio: 16 / 9;
+        }
         /* 封面视频和正文视频响应式 */
         .video-embed {
             position: relative;
