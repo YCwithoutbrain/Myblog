@@ -49,13 +49,6 @@
                     <textarea name="excerpt" rows="3" class="w-full border border-gray-300 rounded px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"><%= (locals.post && locals.post.excerpt) ? locals.post.excerpt : '' %></textarea>
                 </div>
 
-                <!-- 🎬 视频链接 -->
-                <div class="bg-purple-50 p-4 rounded-lg border border-purple-200">
-                    <label class="block text-gray-700 font-bold mb-2">🎬 视频链接 <span class="text-gray-400 font-normal">(选填)</span></label>
-                    <input type="url" name="videoUrl" value="<%= (locals.post && locals.post.videoUrl) ? locals.post.videoUrl : '' %>" placeholder="支持 B站、YouTube 或 .mp4/.webm 直链" class="w-full border border-gray-300 rounded px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <p class="text-xs text-gray-400 mt-1">贴入视频链接，文章页面顶部自动嵌入播放器</p>
-                </div>
-
                 <div>
                     <div class="flex items-center justify-between mb-2">
                         <label class="block text-gray-700 font-bold text-lg">正文 (Markdown)</label>
@@ -88,13 +81,13 @@
                                 <img src="/<%= locals.post.featuredImage %>" alt="Current cover" class="w-full h-auto max-h-40 object-contain rounded shadow-md border bg-gray-50">
                             </div>
                         <% } %>
-                        <input type="file" name="featuredImage" accept="image/*" class="block">
+                        <input type="file" name="featuredImage" accept="image/*,video/*" class="block">
                     </div>
 
                     <!-- 封面视频链接 -->
                     <div class="border-t pt-4">
-                        <p class="text-sm text-gray-500 mb-2">🎬 封面视频链接 <span class="text-gray-400">(选填)</span></p>
-                        <input type="url" name="featuredVideo" value="<%= (locals.post && locals.post.featuredVideo) ? locals.post.featuredVideo : '' %>" placeholder="视频链接，可作为动态封面" class="w-full border border-gray-300 rounded px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <p class="text-sm text-gray-500 mb-2">🎬 封面视频 <span class="text-gray-400">(选填，视频URL 或 iframe嵌入代码)</span></p>
+                        <input type="url" name="featuredVideo" value="<%= (locals.post && locals.post.featuredVideo) ? locals.post.featuredVideo : '' %>" placeholder="视频URL 或 &lt;iframe&gt; 嵌入代码，可作为动态封面" class="w-full border border-gray-300 rounded px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                 </div>
 

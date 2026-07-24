@@ -6,7 +6,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-// 图片上传配置
+// 上传存储配置
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         const uploadDir = 'public/uploads/' + new Date().getFullYear() + '/' + (new Date().getMonth() + 1);
@@ -19,34 +19,46 @@ const storage = multer.diskStorage({
     }
 });
 
-const upload = multer({
+// 图片上传（5MB）
+const uploadImage = multer({
     storage, limits: { fileSize: 5 * 1024 * 1024 },
     fileFilter: (req, file, cb) => {
-        const allowedTypes = /jpeg|jpg|png|gif|webp/;
-        const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-        const mimetype = allowedTypes.test(file.mimetype);
-        if (mimetype && extname) return cb(null, true);
+        const allowed = /jpeg|jpg|png|gif|webp/;
+        if (allowed.test(path.extname(file.originalname).toLowerCase()) &&
+            allowed.test(file.mimetype)) return cb(null, true);
         cb(new Error('只允许上传图片文件'));
     }
 });
 
-// 视频上传配置
+// 视频上传（100MB）
 const uploadVideo = multer({
     storage, limits: { fileSize: 100 * 1024 * 1024 },
     fileFilter: (req, file, cb) => {
-        const allowedExt = /mp4|webm|mov|mkv|avi|flv/;
-        const allowedMime = /video\/mp4|video\/webm|video\/quicktime|video\/x-matroska|video\/x-msvideo|video\/x-flv/;
-        if (allowedExt.test(path.extname(file.originalname).toLowerCase()) &&
-            allowedMime.test(file.mimetype)) return cb(null, true);
-        cb(new Error('只允许上传 MP4/WebM/MOV 等视频文件'));
+        const allowed = /mp4|webm|mov|mkv|avi|flv/;
+        if (allowed.test(path.extname(file.originalname).toLowerCase()) &&
+            /video\//.test(file.mimetype)) return cb(null, true);
+        cb(new Error('只允许上传视频文件'));
+    }
+});
+
+// 封面上传（图片+视频，100MB）
+const uploadCover = multer({
+    storage, limits: { fileSize: 100 * 1024 * 1024 },
+    fileFilter: (req, file, cb) => {
+        const ext = path.extname(file.originalname).toLowerCase();
+        const imgOk = /\.(jpeg|jpg|png|gif|webp)$/i.test(ext) && /image\//.test(file.mimetype);
+        const vidOk = /\.(mp4|webm|mov|mkv|avi|flv)$/i.test(ext) && /video\//.test(file.mimetype);
+        if (imgOk || vidOk) return cb(null, true);
+        cb(new Error('封面只支持图片(JPG/PNG/GIF/WebP)或视频(MP4/WebM/MOV)'));
     }
 });
 
 // ============================================================
-// 📤 上传路由
+// 上传路由
 // ============================================================
 
-router.post('/upload', upload.single('image'), async (req, res) => {
+// Markdown 图片上传
+router.post('/upload', uploadImage.single('image'), async (req, res) => {
     try {
         if (!req.file) return res.status(400).json({ error: '没有提供文件' });
         const url = '/' + req.file.path.replace(/\\/g, '/').replace(/^public\//, '');
@@ -54,6 +66,7 @@ router.post('/upload', upload.single('image'), async (req, res) => {
     } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
+// Markdown 视频上传
 router.post('/upload-video', uploadVideo.single('video'), async (req, res) => {
     try {
         if (!req.file) return res.status(400).json({ error: '没有提供视频文件' });
@@ -63,7 +76,7 @@ router.post('/upload-video', uploadVideo.single('video'), async (req, res) => {
 });
 
 // ============================================================
-// 📋 文章列表 / 新建 / 编辑
+// 页面路由
 // ============================================================
 
 router.get('/', async (req, res) => {
@@ -95,11 +108,12 @@ router.get('/edit/:id', async (req, res) => {
 });
 
 // ============================================================
-// ✍️ 创建 / 更新 / 删除
+// 创建 / 更新 / 删除
 // ============================================================
 
-router.post('/', upload.single('featuredImage'), async (req, res) => {
+router.post('/', uploadCover.single('featuredImage'), async (req, res) => {
     try {
+        const isVideo = (file) => file && /video\//.test(file.mimetype);
         const postData = {
             title: req.body.title,
             slug: req.body.slug || (Date.now().toString(36) + Math.random().toString(36).substring(2,5)),
@@ -107,16 +121,26 @@ router.post('/', upload.single('featuredImage'), async (req, res) => {
             category: req.body.category,
             tags: req.body.tags ? req.body.tags.split(',').map(tag => tag.trim()) : [],
             isPinned: req.body.isPinned === 'on', isPublished: req.body.isPublished === 'on',
-            videoUrl: req.body.videoUrl || undefined,
-            featuredVideo: req.body.featuredVideo || undefined
         };
-        if (req.file) postData.featuredImage = req.file.path.replace(/\\/g, '/').replace(/^public\//, '');
+        // 📸 封面图片 / 🎬 封面视频
+        if (req.file) {
+            const url = req.file.path.replace(/\\/g, '/').replace(/^public\//, '');
+            if (isVideo(req.file)) {
+                postData.featuredVideo = url;
+            } else {
+                postData.featuredImage = url;
+            }
+        }
+        // 封面视频链接（URL 或 iframe）
+        if (req.body.featuredVideo && req.body.featuredVideo.trim()) {
+            postData.featuredVideo = req.body.featuredVideo.trim();
+        }
         const post = new Post(postData); await post.save();
         req.flash('success', '文章创建成功'); res.redirect('/admin/posts');
     } catch (error) { console.error('Error creating post:', error); req.flash('error', '创建文章失败'); res.redirect('/admin/posts/new'); }
 });
 
-router.put('/:id', upload.single('featuredImage'), async (req, res) => {
+router.put('/:id', uploadCover.single('featuredImage'), async (req, res) => {
     try {
         const post = await Post.findById(req.params.id);
         if (!post) return res.status(404).send('文章未找到');
@@ -124,11 +148,18 @@ router.put('/:id', upload.single('featuredImage'), async (req, res) => {
         post.content = req.body.content; post.excerpt = req.body.excerpt; post.category = req.body.category;
         post.tags = req.body.tags ? req.body.tags.split(',').map(tag => tag.trim()) : [];
         post.isPinned = req.body.isPinned === 'on'; post.isPublished = req.body.isPublished === 'on';
-        post.videoUrl = req.body.videoUrl || undefined;
-        post.featuredVideo = req.body.featuredVideo || undefined;
         if (req.file) {
-            if (post.featuredImage) { const oldPath = path.join(__dirname, '../../public', post.featuredImage); if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath); }
-            post.featuredImage = req.file.path.replace(/\\/g, '/').replace(/^public\//, '');
+            const url = req.file.path.replace(/\\/g, '/').replace(/^public\//, '');
+            if (/video\//.test(req.file.mimetype)) {
+                if (post.featuredVideo) { const old = path.join(__dirname, '../../public', post.featuredVideo); if (fs.existsSync(old)) fs.unlinkSync(old); }
+                post.featuredVideo = url;
+            } else {
+                if (post.featuredImage) { const old = path.join(__dirname, '../../public', post.featuredImage); if (fs.existsSync(old)) fs.unlinkSync(old); }
+                post.featuredImage = url;
+            }
+        }
+        if (req.body.featuredVideo && req.body.featuredVideo.trim()) {
+            post.featuredVideo = req.body.featuredVideo.trim();
         }
         await post.save(); req.flash('success', '文章更新成功'); res.redirect('/admin/posts');
     } catch (error) { console.error('Error updating post:', error); req.flash('error', '更新文章失败'); res.redirect(`/admin/posts/edit/${req.params.id}`); }
@@ -138,7 +169,9 @@ router.delete('/:id', async (req, res) => {
     try {
         const post = await Post.findById(req.params.id);
         if (!post) return res.status(404).json({ error: '文章未找到' });
-        if (post.featuredImage) { const ip = path.join(__dirname, '../../public', post.featuredImage); if (fs.existsSync(ip)) fs.unlinkSync(ip); }
+        for (const p of [post.featuredImage, post.featuredVideo]) {
+            if (p) { const fp = path.join(__dirname, '../../public', p); if (fs.existsSync(fp)) fs.unlinkSync(fp); }
+        }
         await post.deleteOne(); req.flash('success', '文章删除成功'); res.redirect('/admin/posts');
     } catch (error) { console.error('Error deleting post:', error); req.flash('error', '删除失败'); res.redirect('/admin/posts'); }
 });

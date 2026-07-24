@@ -21,7 +21,6 @@
                 padding: 15px;
             }
         }
-        /* 保证 Mermaid SVG图表能够自适应屏幕并且不会被外部样式缩小挤压 */
         .mermaid-wrapper {
             width: 100%;
             overflow-x: auto;
@@ -35,6 +34,20 @@
         .mermaid svg {
             max-width: none !important;
             height: auto;
+        }
+        /* 封面视频和正文视频响应式 */
+        .video-embed {
+            position: relative;
+            padding-bottom: 56.25%;
+            height: 0;
+            overflow: hidden;
+            max-width: 100%;
+        }
+        .video-embed iframe,
+        .video-embed video {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
         }
     </style>
 </head>
@@ -51,9 +64,21 @@
 
     <main class="container mx-auto px-6 py-12 max-w-4xl">
         <article class="bg-white rounded-lg shadow-md overflow-hidden">
-            <% if (post.featuredImage) { %>
+
+            <%# 封面：图片 -> 图片，视频URL -> 播放器，iframe -> 嵌入 %>
+            <% if (post.featuredVideo) { %>
+                <% if (post.featuredVideo.includes('<iframe') || post.featuredVideo.includes('<IFRAME')) { %>
+                    <div class="video-embed bg-black"><%- post.featuredVideo %></div>
+                <% } else { %>
+                    <video controls style="width:100%; max-height:440px; background:#000;" preload="metadata"
+                        poster="<%= post.featuredImage ? '/' + post.featuredImage.replace(/\\/g, '/').replace(/^public\//, '') : '' %>">
+                        <source src="<%= post.featuredVideo.startsWith('http') ? post.featuredVideo : '/' + post.featuredVideo.replace(/\\/g, '/').replace(/^public\//, '') %>">
+                    </video>
+                <% } %>
+            <% } else if (post.featuredImage) { %>
                 <img src="/<%= post.featuredImage.replace(/\\/g, '/').replace(/^public\//, '') %>" alt="<%= post.title %>" class="w-full h-auto max-h-96 object-contain bg-gray-50">
             <% } %>
+
             <div class="p-8">
                 <div class="flex items-center text-sm text-gray-500 mb-4">
                     <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full"><%= post.category %></span>
@@ -72,35 +97,6 @@
                 <% } %>
                 <div class="markdown-body" id="markdown-container">
                     <div style="white-space: pre-wrap;"><%= post.content %></div>
-
-        <!-- 视频嵌入 -->
-        <% if (post.videoUrl) { %>
-        <div class="video-container max-w-4xl mx-auto mt-8 mb-8 rounded-lg overflow-hidden shadow-lg">
-            <% if (post.videoUrl.includes('bilibili') || post.videoUrl.includes('BV')) { %>
-                <% const bvid = post.videoUrl.split('/').pop().split('?')[0]; %>
-                <div style="position: relative; padding: 56.25% 0 0 0;">
-                    <iframe src="https://player.bilibili.com/player.html?bvid=<%= bvid %>&page=1&high_quality=1"
-                        style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"
-                        scrolling="no" frameborder="no" allowfullscreen></iframe>
-                </div>
-            <% } else if (post.videoUrl.includes('youtube') || post.videoUrl.includes('youtu.be')) { %>
-                <% const ytId = post.videoUrl.split('v=')[1]?.split('&')[0] || post.videoUrl.split('youtu.be/')[1]?.split('?')[0]; %>
-                <div style="position: relative; padding: 56.25% 0 0 0;">
-                    <iframe src="https://www.youtube.com/embed/<%= ytId %>"
-                        style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"
-                        frameborder="0" allowfullscreen></iframe>
-                </div>
-            <% } else { %>
-                <!-- 直链视频 -->
-                <video controls style="width: 100%; max-height: 70vh;" preload="metadata"
-                    poster="/<%= post.featuredImage %>">
-                    <source src="<%= post.videoUrl %>" type="video/mp4">
-                    你的浏览器不支持视频播放
-                </video>
-            <% } %>
-        </div>
-        <% } %>
-
                 </div>
 
                 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -112,43 +108,27 @@
                         const container = document.getElementById('markdown-container');
 
                         if (rawContent && typeof marked !== 'undefined') {
-                            // Parse markdown
+                            // 允许 markdown 内嵌 HTML（iframe）
                             container.innerHTML = marked.parse(rawContent);
 
-                            // Process Mermaid diagrams
+                            // Mermaid
                             if (typeof mermaid !== 'undefined') {
-                                mermaid.initialize({ 
-                                    startOnLoad: false, 
-                                    theme: 'default',
-                                    // 不强制限制最大宽度，让外部容器控制滚动
-                                    useMaxWidth: false
-                                });
-
+                                mermaid.initialize({ startOnLoad: false, theme: 'default', useMaxWidth: false });
                                 container.querySelectorAll('pre code.language-mermaid').forEach((block) => {
                                     const pre = block.parentElement;
-
-                                    // 创建一个可滚动的容器
                                     const wrapper = document.createElement('div');
                                     wrapper.className = 'mermaid-wrapper border border-gray-100 rounded bg-white shadow-sm p-4';
-
                                     const div = document.createElement('div');
                                     div.className = 'mermaid';
                                     div.textContent = block.textContent;
-
                                     wrapper.appendChild(div);
                                     pre.parentNode.replaceChild(wrapper, pre);
                                 });
-
-                                try {
-                                    await mermaid.run({
-                                        querySelector: '.mermaid'
-                                    });
-                                } catch (e) {
-                                    console.error('Mermaid render failed:', e);
-                                }
+                                try { await mermaid.run({ querySelector: '.mermaid' }); }
+                                catch (e) { console.error('Mermaid render failed:', e); }
                             }
 
-                            // Highlight code blocks
+                            // Code highlight
                             if (typeof hljs !== 'undefined') {
                                 container.querySelectorAll('pre code:not(.language-mermaid)').forEach((block) => {
                                     hljs.highlightElement(block);
