@@ -29,7 +29,7 @@ exports.getHomepage = async (req, res) => {
                     .sort({ createdAt: -1 })
                     .skip(skip)
                     .limit(limit)
-                    .select('title excerpt slug featuredImage createdAt tags metadata.readTime category'),
+                    .select('title excerpt slug featuredImage featuredVideo createdAt tags metadata.readTime category'),
                 Post.countDocuments(searchCondition)
             ]);
         } else {
@@ -40,7 +40,7 @@ exports.getHomepage = async (req, res) => {
             })
                 .sort({ createdAt: -1 })
                 .limit(2)
-                .select('title excerpt slug featuredImage createdAt tags metadata.readTime');
+                .select('title excerpt slug featuredImage featuredVideo createdAt tags metadata.readTime');
 
             [posts, total] = await Promise.all([
                 Post.find({
@@ -50,7 +50,7 @@ exports.getHomepage = async (req, res) => {
                     .sort({ createdAt: -1 })
                     .skip(skip)
                     .limit(limit)
-                    .select('title excerpt slug featuredImage createdAt tags metadata.readTime category'),
+                    .select('title excerpt slug featuredImage featuredVideo createdAt tags metadata.readTime category'),
 
                 Post.countDocuments({
                     isPublished: true,
