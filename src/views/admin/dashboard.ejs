@@ -23,7 +23,7 @@
         <div class="flex justify-between items-center mb-6">
             <div class="flex items-center space-x-4">
                 <h2 class="text-2xl font-bold"><%= title %></h2>
-                <form action="/admin/posts" method="GET" class="flex border border-gray-300 rounded shadow-sm overflow-hidden">
+                <form action="/admin/posts" method="GET" class="flex border border-gray-300 rounded shadow-sm overflow-x-auto">
                     <input type="text" name="q" value="<%= locals.searchQuery || '' %>" placeholder="搜索文章..." class="px-3 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm w-48 transition-all focus:w-64">
                     <button type="submit" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 text-sm border-l border-gray-300">
                         搜索
@@ -36,7 +36,7 @@
             <a href="/admin/posts/new" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">新建文章</a>
         </div>
         
-        <div class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="bg-white rounded-lg shadow overflow-x-auto">
             <table class="min-w-full">
                 <thead class="bg-gray-50">
                     <tr>
