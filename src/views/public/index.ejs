@@ -86,7 +86,7 @@
                     <% if (post.featuredVideo.includes('<iframe') || post.featuredVideo.includes('<IFRAME')) { %>
                         <div class="cover-video-container"><%- post.featuredVideo %></div>
                     <% } else { %>
-                        <video controls class="w-full h-48 object-cover bg-black"
+                        <video autoplay muted loop playsinline class="w-full h-48 object-cover bg-black"
                             poster="<%= post.featuredImage ? '/' + post.featuredImage.replace(/\\/g, '/').replace(/^public\//, '') : '' %>">
                             <source src="<%= post.featuredVideo.startsWith('http') ? post.featuredVideo : '/' + post.featuredVideo.replace(/\\/g, '/').replace(/^public\//, '') %>">
                         </video>
@@ -136,7 +136,7 @@
                             <% if (post.featuredVideo.includes('<iframe') || post.featuredVideo.includes('<IFRAME')) { %>
                                 <div class="cover-video-container-sm"><%- post.featuredVideo %></div>
                             <% } else { %>
-                                <video controls class="w-full h-40 object-cover bg-black rounded-lg"
+                                <video autoplay muted loop playsinline class="w-full h-40 object-cover bg-black rounded-lg"
                                     poster="<%= post.featuredImage ? '/' + post.featuredImage.replace(/\\/g, '/').replace(/^public\//, '') : '' %>">
                                     <source src="<%= post.featuredVideo.startsWith('http') ? post.featuredVideo : '/' + post.featuredVideo.replace(/\\/g, '/').replace(/^public\//, '') %>">
                                 </video>
