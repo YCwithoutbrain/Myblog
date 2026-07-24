@@ -148,7 +148,14 @@ router.put('/:id', uploadCover.single('featuredImage'), async (req, res) => {
         post.content = req.body.content; post.excerpt = req.body.excerpt; post.category = req.body.category;
         post.tags = req.body.tags ? req.body.tags.split(',').map(tag => tag.trim()) : [];
         post.isPinned = req.body.isPinned === 'on'; post.isPublished = req.body.isPublished === 'on';
-        if (req.file) {
+        if (req.body.deleteCover === 'on') {
+            // 删除封面（删文件+清字段）
+            for (const p of [post.featuredImage, post.featuredVideo]) {
+                if (p) { const fp = path.join(__dirname, '../../public', p); if (fs.existsSync(fp)) fs.unlinkSync(fp); }
+            }
+            post.featuredImage = undefined;
+            post.featuredVideo = undefined;
+        } else if (req.file) {
             const url = req.file.path.replace(/\\/g, '/').replace(/^public\//, '');
             if (/video\//.test(req.file.mimetype)) {
                 if (post.featuredVideo) { const old = path.join(__dirname, '../../public', post.featuredVideo); if (fs.existsSync(old)) fs.unlinkSync(old); }
@@ -158,7 +165,7 @@ router.put('/:id', uploadCover.single('featuredImage'), async (req, res) => {
                 post.featuredImage = url;
             }
         }
-        if (req.body.featuredVideo && req.body.featuredVideo.trim()) {
+        if (!req.body.deleteCover && req.body.featuredVideo && req.body.featuredVideo.trim()) {
             post.featuredVideo = req.body.featuredVideo.trim();
         }
         await post.save(); req.flash('success', '文章更新成功'); res.redirect('/admin/posts');

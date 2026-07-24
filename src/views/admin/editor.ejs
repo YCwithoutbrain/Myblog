@@ -82,6 +82,12 @@
                             </div>
                         <% } %>
                         <input type="file" name="featuredImage" accept="image/*,video/*" class="block">
+                        <% if (locals.post && (locals.post.featuredImage || locals.post.featuredVideo)) { %>
+                        <label class="flex items-center cursor-pointer mt-2 text-red-600">
+                            <input type="checkbox" name="deleteCover" class="form-checkbox h-4 w-4 text-red-500 rounded focus:ring-red-500 mr-2">
+                            <span class="text-sm">🗑️ 删除当前封面</span>
+                        </label>
+                        <% } %>
                     </div>
 
                     <!-- 封面视频链接 -->
