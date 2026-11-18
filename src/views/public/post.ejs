@@ -132,8 +132,13 @@
                                     wrapper.appendChild(div);
                                     pre.parentNode.replaceChild(wrapper, pre);
                                 });
-                                try { await mermaid.run({ querySelector: '.mermaid' }); }
-                                catch (e) { console.error('Mermaid render failed:', e); }
+                                try {
+                                    if (typeof mermaid.run === 'function') {
+                                        await mermaid.run({ querySelector: '.mermaid' });
+                                    } else if (typeof mermaid.init === 'function') {
+                                        mermaid.init(undefined, container.querySelectorAll('.mermaid'));
+                                    }
+                                } catch (e) { console.error('Mermaid render failed:', e); }
                             }
 
                             // Code highlight
