@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= typeof title !== 'undefined' ? title : '出错了' %> - My Blog</title>
+    <link href="/vendor/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 font-sans text-gray-800">
+    <nav class="bg-white shadow p-4">
+        <div class="container mx-auto flex justify-between items-center">
+            <a href="/" class="text-xl font-bold">My Blog</a>
+            <div class="space-x-4">
+                <a href="/" class="text-gray-600 hover:text-blue-600">首页</a>
+                <a href="/admin" class="text-gray-600 hover:text-blue-600">后台</a>
+            </div>
+        </div>
+    </nav>
+    <main class="container mx-auto px-6 py-24 max-w-2xl text-center">
+        <h1 class="text-4xl font-bold mb-4"><%= typeof message !== 'undefined' ? message : '服务器开小差了' %></h1>
+        <p class="text-gray-500 mb-8">抱歉，这个页面暂时打不开。</p>
+        <a href="/" class="inline-block bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">回到首页</a>
+    </main>
+</body>
+</html>

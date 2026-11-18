@@ -1,0 +1,29 @@
+# deps
+node_modules/
+
+# env
+.env
+.env.*
+!.env.example
+
+# uploads & runtime
+public/uploads/*
+!public/uploads/.gitkeep
+logs/
+temp/
+backups/
+server.log
+
+# ide
+.vs/
+.vscode/
+
+# os
+.DS_Store
+Thumbs.db
+
+# misc
+*.bak*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

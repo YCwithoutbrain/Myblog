@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title><%= title %> - Admin</title>
+    <link href="/vendor/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <nav class="bg-gray-800 text-white p-4 shadow-lg flex justify-between items-center">
+        <h1 class="text-2xl font-bold">Blog Admin</h1>
+        <div class="space-x-6">
+            <a href="/admin/posts" class="text-gray-300 hover:text-white transition">返回列表</a>
+        </div>
+    </nav>
+    <div class="container mx-auto p-6 max-w-4xl">
+        <div class="bg-white rounded-lg shadow-lg p-8">
+            <h2 class="text-3xl font-bold mb-8 text-gray-800 border-b pb-4"><%= title %></h2>
+            <% if (locals.error && locals.error.length > 0) { %>
+                <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded shadow">
+                    <p><%= locals.error[0] %></p>
+                </div>
+            <% } %>
+            <form action="<%= action %>" method="POST" enctype="multipart/form-data" class="space-y-6">
+                <div>
+                    <label class="block text-gray-700 font-bold mb-2 text-lg">文章标题</label>
+                    <input type="text" name="title" value="<%= (locals.post && locals.post.title) ? locals.post.title : '' %>" required class="w-full border border-gray-300 rounded px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-gray-700 font-bold mb-2">分类</label>
+                        <select name="category" required class="w-full border border-gray-300 rounded px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                            <option value="blog" <%= (locals.post && locals.post.category === 'blog') ? 'selected' : '' %>>Blog</option>
+                            <option value="project" <%= (locals.post && locals.post.category === 'project') ? 'selected' : '' %>>Project</option>
+                            <option value="note" <%= (locals.post && locals.post.category === 'note') ? 'selected' : '' %>>Note</option>
+                            <option value="lab" <%= (locals.post && locals.post.category === 'lab') ? 'selected' : '' %>>Lab</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 font-bold mb-2">标签（逗号分隔）</label>
+                        <input type="text" name="tags" value="<%= (locals.post && locals.post.tags) ? locals.post.tags.join(', ') : '' %>" class="w-full border border-gray-300 rounded px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-bold mb-2">Slug（若不填则自动生成）</label>
+                    <input type="text" name="slug" value="<%= (locals.post && locals.post.slug) ? locals.post.slug : '' %>" placeholder="e.g. my-first-post" class="w-full border border-gray-300 rounded px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-bold mb-2">摘要</label>
+                    <textarea name="excerpt" rows="3" class="w-full border border-gray-300 rounded px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"><%= (locals.post && locals.post.excerpt) ? locals.post.excerpt : '' %></textarea>
+                </div>
+
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="block text-gray-700 font-bold text-lg">正文 (Markdown)</label>
+                        <div class="flex gap-2">
+                            <!-- 插入图片 -->
+                            <input type="file" id="markdown-image-upload" accept="image/*" class="hidden" onchange="uploadMarkdownImage(this)">
+                            <button type="button" onclick="document.getElementById('markdown-image-upload').click()" class="bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 text-sm py-2 px-4 rounded shadow-sm flex items-center transition cursor-pointer">
+                                🖼️ 插入图片
+                            </button>
+
+                            <!-- 插入视频 -->
+                            <input type="file" id="markdown-video-upload" accept="video/*" class="hidden" onchange="uploadMarkdownVideo(this)">
+                            <button type="button" onclick="document.getElementById('markdown-video-upload').click()" class="bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 text-sm py-2 px-4 rounded shadow-sm flex items-center transition cursor-pointer">
+                                🎬 插入视频
+                            </button>
+                        </div>
+                    </div>
+                    <textarea name="content" rows="16" required class="w-full border border-gray-300 rounded px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm shadow-inner"><%= (locals.post && locals.post.content) ? locals.post.content : '' %></textarea>
+                </div>
+
+                <!-- 封面（图片 + 视频链接） -->
+                <div class="bg-gray-50 p-6 rounded-lg border border-gray-200 space-y-4">
+                    <label class="block text-gray-700 font-bold">封面设置</label>
+
+                    <!-- 封面图片上传 -->
+                    <div>
+                        <p class="text-sm text-gray-500 mb-2">🖼️ 封面图片</p>
+                        <% if (locals.post && locals.post.featuredImage) { %>
+                            <div class="mb-3 relative w-64">
+                                <img src="/<%= locals.post.featuredImage %>" alt="Current cover" class="w-full h-auto max-h-40 object-contain rounded shadow-md border bg-gray-50">
+                            </div>
+                        <% } %>
+                        <input type="file" name="featuredImage" accept="image/*,video/*" class="block">
+                        <% if (locals.post && (locals.post.featuredImage || locals.post.featuredVideo)) { %>
+                        <label class="flex items-center cursor-pointer mt-2 text-red-600">
+                            <input type="checkbox" name="deleteCover" class="form-checkbox h-4 w-4 text-red-500 rounded focus:ring-red-500 mr-2">
+                            <span class="text-sm">🗑️ 删除当前封面</span>
+                        </label>
+                        <% } %>
+                    </div>
+
+                    <!-- 封面视频链接 -->
+                    <div class="border-t pt-4">
+                        <p class="text-sm text-gray-500 mb-2">🎬 封面视频 <span class="text-gray-400">(选填，视频URL 或 iframe嵌入代码)</span></p>
+                        <input type="text" name="featuredVideo" value="<%= (locals.post && locals.post.featuredVideo) ? locals.post.featuredVideo : '' %>" placeholder="视频URL 或 &lt;iframe&gt; 嵌入代码，可作为动态封面" class="w-full border border-gray-300 rounded px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+
+                <div class="bg-blue-50 p-6 rounded-lg border border-blue-100 flex flex-wrap items-center space-x-10">
+                    <label class="flex items-center cursor-pointer">
+                        <input type="checkbox" name="isPublished" class="form-checkbox h-5 w-5 text-blue-600 rounded focus:ring-blue-500" <%= (!locals.post || locals.post.isPublished) ? 'checked' : '' %>>
+                        <span class="ml-3 text-gray-700 font-medium select-none">已发布</span>
+                    </label>
+                    <label class="flex items-center cursor-pointer">
+                        <input type="checkbox" name="isPinned" class="form-checkbox h-5 w-5 text-yellow-500 rounded focus:ring-yellow-500" <%= (locals.post && locals.post.isPinned) ? 'checked' : '' %>>
+                        <span class="ml-3 text-gray-700 font-medium select-none">置顶文章</span>
+                    </label>
+                </div>
+                <div class="flex justify-end pt-6 border-t mt-8">
+                    <a href="/admin/posts" class="px-6 py-3 text-gray-600 hover:text-gray-800 transition">取消</a>
+                    <button type="submit" class="px-8 py-3 bg-blue-600 text-white rounded shadow-md hover:bg-blue-700 transition font-medium text-lg">保存文章</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // 上传 Markdown 图片
+        async function uploadMarkdownImage(input) {
+            if (!input.files || input.files.length === 0) return;
+            const file = input.files[0];
+            const formData = new FormData();
+            formData.append('image', file);
+
+            const textarea = document.querySelector('textarea[name="content"]');
+            const startPos = textarea.selectionStart;
+            const endPos = textarea.selectionEnd;
+
+            const placeholder = `\n![上传中...]()\n`;
+            const textBefore = textarea.value.substring(0, startPos);
+            const textAfter = textarea.value.substring(endPos);
+            textarea.value = textBefore + placeholder + textAfter;
+
+            try {
+                const response = await fetch('/admin/posts/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+
+                if (response.ok && data.url) {
+                    const markdownImage = `\n![${file.name}](${data.url})\n`;
+                    textarea.value = textarea.value.replace(placeholder, markdownImage);
+                } else {
+                    alert('上传失败: ' + (data.error || '未知错误'));
+                    textarea.value = textarea.value.replace(placeholder, '');
+                }
+            } catch (err) {
+                alert('上传发生错误');
+                textarea.value = textarea.value.replace(placeholder, '');
+            } finally {
+                input.value = '';
+            }
+        }
+
+        // 上传 Markdown 视频
+        async function uploadMarkdownVideo(input) {
+            if (!input.files || input.files.length === 0) return;
+            const textarea = document.querySelector('textarea[name="content"]');
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+
+            const placeholder = `\n[🎬 视频上传中...]\n`;
+            const textBefore = textarea.value.substring(0, start);
+            const textAfter = textarea.value.substring(end);
+            textarea.value = textBefore + placeholder + textAfter;
+
+            const btn = document.querySelector('button[onclick*="markdown-video-upload"]');
+            btn.textContent = '上传中...';
+            btn.disabled = true;
+
+            try {
+                const formData = new FormData();
+                formData.append('video', input.files[0]);
+                const res = await fetch('/admin/posts/upload-video', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                if (data.url) {
+                    const mdVideo = `\n<video controls style="width:100%; max-width:800px;" src="${data.url}"></video>\n`;
+                    textarea.value = textarea.value.replace(placeholder, mdVideo);
+                    textarea.focus();
+                } else {
+                    alert('视频上传失败: ' + (data.error || '未知错误'));
+                    textarea.value = textarea.value.replace(placeholder, '');
+                }
+            } catch (err) {
+                alert('视频上传错误: ' + err.message);
+                textarea.value = textarea.value.replace(placeholder, '');
+            } finally {
+                btn.textContent = '🎬 插入视频';
+                btn.disabled = false;
+                input.value = '';
+            }
+        }
+    </script>
+</body>
+</html>
